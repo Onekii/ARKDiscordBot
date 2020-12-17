@@ -276,15 +276,18 @@ namespace ARKDiscordBot
             {
                 owner._log.Info($"{p.SteamID} - {p.TeamId}");
 
-                try
+                for (int i = 0; i < 5; i++)
                 {
-                    owner._log.Info($"Before kick command: {p.SteamID}");
-                    var result = _RCON.SendCommandAsync("KickPlayer " + p.SteamID).GetAwaiter().GetResult();
-                    owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {p.SteamID} returned {result}");
-                }
-                catch(Exception ex)
-                {
-                    owner._log.Info(ex);
+                    try
+                    {
+                        owner._log.Info($"Before kick command: {p.SteamID}");
+                        var result = _RCON.SendCommandAsync("KickPlayer " + p.SteamID).GetAwaiter().GetResult();
+                        owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {p.SteamID} returned {result}");
+                    }
+                    catch (Exception ex)
+                    {
+                        owner._log.Info(ex);
+                    }
                 }
             }
 
