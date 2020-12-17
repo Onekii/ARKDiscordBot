@@ -61,13 +61,34 @@ namespace ARKDiscordBot
                 StatusClass sc = new StatusClass(name, ip, port, rconpassword, mapname, this);
                 Globals.Servers.Add(sc);
             }
+
+            _log.Info($"LoadServerData returned {Globals.Servers.Count} entries.");
+
         }
 
         private async Task CheckServersAvailable()
         {
-            Globals.Servers.Where(x => !x.Connected).ToList().ForEach(x => x.Reconnect());
+            Globals.Servers.ForEach(x =>
+            {
+                _log.Info($"{x.MapName} connected: {x.Connected}");
+                if(!x.Connected)
+                {
+                    x.Reconnect();
+                }
+            });
+
+
+            //Globals.Servers.Where(x => !x.Connected).ToList().ForEach(x =>
+            //{
+            //    _log.Info($"{x.MapName} connected: {x.Connected}");
+            //});
 
             await _commands.UpdateServerStatus(Embeds.ServerStatus(Globals.Servers)).ConfigureAwait(false);
+        }
+
+        internal List<Player> GetPlayers()
+        {
+            return _storage.Players;
         }
 
         internal async Task ShutdownServerAsync(string serverName)

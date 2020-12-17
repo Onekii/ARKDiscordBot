@@ -14,7 +14,7 @@ namespace ARKDiscordBot
     public class StatusClass
     {
         private RCON _RCON;
-        internal bool Connected;
+        internal bool Connected = false;
         internal string MapName;
         internal string Name => _name;
 
@@ -26,6 +26,8 @@ namespace ARKDiscordBot
         RCONManager owner;
         Thread t;
         Thread chatThread;
+        Thread playerThread;
+        CancellationTokenSource _token;
 
         public StatusClass(string name, string ip, string port, string rconpassword, string mapname, RCONManager manager)
         {
@@ -36,6 +38,7 @@ namespace ARKDiscordBot
             _port = port;
             _rconpassword = rconpassword;
             _name = name;
+            _token = new CancellationTokenSource();
 
             t = new Thread(new ThreadStart(Start));
             t.Start();
@@ -44,8 +47,12 @@ namespace ARKDiscordBot
         internal void Reconnect()
         {
             if (t.IsAlive)
+            {
+                owner._log.Info($"Trying to reconnect to open thread on {MapName} - Thread State: {t.ThreadState}");
                 return;
+            }
 
+            _token = new CancellationTokenSource();
             t = new Thread(new ThreadStart(Start));
             t.Start();
         }
@@ -56,18 +63,51 @@ namespace ARKDiscordBot
             {
                 try
                 {
+                    _token.Token.ThrowIfCancellationRequested();
                     var endpoint = new IPEndPoint(IPAddress.Parse(_ip), int.Parse(_port));
                     _RCON = new RCON(endpoint, _rconpassword, 0);
                     await _RCON.ConnectAsync();
 
                     Connected = true;
 
+                    owner._log.Info($"Attempting to Connect - {MapName} on {_ip}:{_port} with password {_rconpassword}");
+
                     _RCON.OnDisconnected += Rcon_OnDisconnected;
+                    //this.playerThread = new Thread(async delegate ()
+                    //{
+                    //    List<Team> teams = owner.GetTeams();
+                    //    List<Player> players = owner.GetPlayers();
+                    //    var query = teams.Join
+                    //    (players,
+                    //     team => team.Id,
+                    //     player => player.TeamId,
+                    //     (team, player) => new { player, team });
+
+                    //    Thread.Sleep(10000);
+                    //    while (Connected)
+                    //    {
+                    //        string r = await _RCON.SendCommandAsync("listplayers").ConfigureAwait(false);
+                    //        string[] s = r.Split("\r\n");
+
+                    //        foreach (string str in s)
+                    //        {
+                    //            foreach (var v in query)
+                    //            {
+                    //                if (str.Contains(v.player.SteamID) && v.team.OpenMap != MapName)
+                    //                {
+                    //                    await _RCON.SendCommandAsync("kickplayer " + v.player.SteamID);
+                    //                }
+                    //            }
+                    //        }
+                    //    }
+                    //});
+                    //playerThread.Start();
                     this.chatThread = new Thread(async delegate ()
                     {
                         Thread.Sleep(5000);
-                        for (; ; )
+                        while (Connected)
                         {
+                            owner._log.Info($"{MapName} - ChatThread::Loop");
                             try
                             {
                                 string r = await _RCON.SendCommandAsync("getchat").ConfigureAwait(false);
@@ -180,7 +220,9 @@ namespace ARKDiscordBot
                             }
                             catch (Exception ex)
                             {
-                                owner._log.Info(ex.Message);
+                                //owner._log.Info(ex.Message);
+                                Connected = false;
+                                _token.Cancel();
                                 break;
                             }
                             Thread.Sleep(5000);
@@ -188,10 +230,15 @@ namespace ARKDiscordBot
                     });
                     chatThread.Start();
 
-                    await Task.Delay(-1).ConfigureAwait(false);
+                    await Task.Delay(-1, _token.Token).ConfigureAwait(false);
 
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    //owner._log.Info(ex.Message);
+                    Connected = false;
+                    _token.Cancel();
+                }
             });
 
             task.GetAwaiter().GetResult();
@@ -201,15 +248,22 @@ namespace ARKDiscordBot
 
         internal async Task KickAllTeamPlayers(Team team)
         {
-            string result = await _RCON.SendCommandAsync("listplayers");
+            try
+            {
+                string result = await _RCON.SendCommandAsync("listplayers").ConfigureAwait(false);
 
-            Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
-                .ToList().ForEach(async x =>
-                { 
-                    if (result.Contains(x))
-                        await _RCON.SendCommandAsync("KickPlayer " + x).ConfigureAwait(false);
-                }
-                );
+                Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
+                    .ToList().ForEach(async x =>
+                    {
+                        if (result.Contains(x))
+                            await _RCON.SendCommandAsync("kickplayer " + x).ConfigureAwait(false);
+                    }
+                    );
+            }
+            catch (Exception ex)
+            {
+                owner._log.Info(ex);
+            }
         }
 
         internal void WhiteListTeam(Team team)
@@ -231,7 +285,16 @@ namespace ARKDiscordBot
 
         private void Rcon_OnDisconnected()
         {
-            Connected = false;
+            try
+            {
+                owner._log.Info($"{MapName} - RCON::Disconnected");
+                Connected = false;
+                _token.Cancel();
+            }
+            catch (Exception ex)
+            {
+                owner._log.Info(ex);
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using Microsoft.Extensions.Configuration;
+using NLog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +13,7 @@ namespace ARKDiscordBot
 {
     public class ArkModule : ModuleBase<SocketCommandContext>
     {
-
+        Logger _log = LogManager.GetCurrentClassLogger();
         IConfigurationRoot _config;
         RCONManager _rconManager;
         Storage _storage;
@@ -98,7 +99,7 @@ namespace ARKDiscordBot
         }
 
         [Command("createnewteam")]
-        public async Task NewTeam ([Remainder]string teamName)
+        public async Task NewTeam (string teamName, [Remainder]string tribeName)
         {
             IUser user = Context.User;
 
@@ -111,6 +112,7 @@ namespace ARKDiscordBot
             Team newTeam = new Team();
             newTeam.Id = _storage.Teams.Count + 1;
             newTeam.Name = teamName;
+            newTeam.TribeName = tribeName;
 
             var role = await Context.Guild.CreateRoleAsync(teamName, null, null, false, true, null).ConfigureAwait(false);
             newTeam.RoleId = role.Id;
@@ -219,8 +221,10 @@ namespace ARKDiscordBot
             if (plr is null)
             {
                 await Context.Channel.SendMessageAsync("", false, Embeds.DiscordUserNoPlayer(user)).ConfigureAwait(false);
+
                 return;
             }
+
             Team team = _storage.Teams.Find(x => x.Id == plr.TeamId);
             if (team is null)
             {
