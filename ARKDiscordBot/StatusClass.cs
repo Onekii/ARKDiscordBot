@@ -279,7 +279,7 @@ namespace ARKDiscordBot
                 try
                 {
                     owner._log.Info($"Before kick command: {p.SteamID}");
-                    string result = await _RCON.SendCommandAsync("KickPlayer " + p.SteamID).ConfigureAwait(false); ;
+                    var result = _RCON.SendCommandAsync("KickPlayer " + p.SteamID).GetAwaiter().GetResult();
                     owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {p.SteamID} returned {result}");
                 }
                 catch(Exception ex)
