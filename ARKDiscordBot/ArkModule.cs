@@ -242,7 +242,7 @@ namespace ARKDiscordBot
 
             StatusClass server = Globals.Servers.Find(x => x.MapName == team.OpenMap);
             server.RemoveTeamFromWhiteList(team);
-            await server.KickAllTeamPlayers(team).ConfigureAwait(false);
+            server.KickAllTeamPlayers(team);
 
             team.OpenMap = "";
             await _commands.UpdateHoursRemaining(Embeds.TeamCurrency(_storage.Teams));

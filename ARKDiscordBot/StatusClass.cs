@@ -246,24 +246,31 @@ namespace ARKDiscordBot
             Connected = false;
         }
 
-        internal async Task KickAllTeamPlayers(Team team)
+        internal void KickAllTeamPlayers(Team team)
         {
-            try
-            {
-                string result = await _RCON.SendCommandAsync("listplayers").ConfigureAwait(false);
+            //try
+            //{
+            //    string result = await _RCON.SendCommandAsync("listplayers").ConfigureAwait(false);
 
-                Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
-                    .ToList().ForEach(async x =>
-                    {
-                        if (result.Contains(x))
-                            await _RCON.SendCommandAsync("kickplayer " + x).ConfigureAwait(false);
-                    }
-                    );
-            }
-            catch (Exception ex)
-            {
-                owner._log.Info(ex);
-            }
+            //    Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
+            //        .ToList().ForEach(async x =>
+            //        {
+            //            if (result.Contains(x))
+            //                await _RCON.SendCommandAsync("kickplayer " + x).ConfigureAwait(false);
+            //        }
+            //        );
+            //}
+            //catch (Exception ex)
+            //{
+            //    owner._log.Info(ex);
+            //}
+
+            Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
+                .ToList().ForEach(async x =>
+                {
+                    string result = await _RCON.SendCommandAsync("kickplayer " + x);
+                    owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {x} returned {result}");
+                });
         }
 
         internal void WhiteListTeam(Team team)
