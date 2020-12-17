@@ -268,7 +268,7 @@ namespace ARKDiscordBot
             Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
                 .ToList().ForEach(async x =>
                 {
-                    string result = await _RCON.SendCommandAsync("kickplayer " + x);
+                    string result = await _RCON.SendCommandAsync("kickplayer " + x).ConfigureAwait(false);
                     owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {x} returned {result}");
                 });
         }
