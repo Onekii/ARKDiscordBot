@@ -246,7 +246,7 @@ namespace ARKDiscordBot
             Connected = false;
         }
 
-        internal void KickAllTeamPlayers(Team team)
+        internal async Task KickAllTeamPlayers(Team team)
         {
             //try
             //{
@@ -265,19 +265,42 @@ namespace ARKDiscordBot
             //    owner._log.Info(ex);
             //}
 
-            Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
-                .ToList().ForEach(async x =>
+            owner._log.Info($"Team: {team.Id} {team.Name}");
+            var s = Storage.GetInstance();
+            owner._log.Info($"s:{s}");
+            var players = s.Players;
+            owner._log.Info($"players: {players.Count}");
+            var filtered = players.Where(x => x.TeamId == team.Id);
+            owner._log.Info($"filtered: {filtered.Count()}");
+            foreach (var p in filtered)
+            {
+                owner._log.Info($"{p.SteamID} - {p.TeamId}");
+
+                try
                 {
-                    try
-                    {
-                        string result = await _RCON.SendCommandAsync("KickPlayer " + x);
-                        owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {x} returned {result}");
-                    }
-                    catch (Exception ex)
-                    {
-                        owner._log.Info(ex);
-                    }
-                });
+                    owner._log.Info($"Before kick command: {p.SteamID}");
+                    string result = await _RCON.SendCommandAsync("KickPlayer " + p.SteamID).ConfigureAwait(false); ;
+                    owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {p.SteamID} returned {result}");
+                }
+                catch(Exception ex)
+                {
+                    owner._log.Info(ex);
+                }
+            }
+
+            //Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
+            //    .ToList().ForEach(async x =>
+            //    {
+            //        try
+            //        {
+            //            string result = await _RCON.SendCommandAsync("KickPlayer " + x);
+            //            owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {x} returned {result}");
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            owner._log.Info(ex);
+            //        }
+            //    });
         }
 
         internal void WhiteListTeam(Team team)
