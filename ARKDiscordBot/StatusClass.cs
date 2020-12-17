@@ -180,6 +180,7 @@ namespace ARKDiscordBot
                             }
                             catch (Exception ex)
                             {
+                                owner._log.Info(ex.Message);
                                 break;
                             }
                             Thread.Sleep(5000);

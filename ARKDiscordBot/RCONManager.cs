@@ -17,7 +17,7 @@ namespace ARKDiscordBot
 {
     public class RCONManager
     {
-        private readonly Logger _log = LogManager.GetCurrentClassLogger();
+        internal readonly Logger _log = LogManager.GetCurrentClassLogger();
         private readonly DiscordSocketClient _client;
         private readonly IConfigurationRoot _config;
         private readonly Timer _timer;
