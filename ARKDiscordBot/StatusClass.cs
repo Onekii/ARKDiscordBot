@@ -48,7 +48,6 @@ namespace ARKDiscordBot
         {
             if (t.IsAlive)
             {
-                owner._log.Info($"Trying to reconnect to open thread on {MapName} - Thread State: {t.ThreadState}");
                 return;
             }
 
@@ -70,7 +69,6 @@ namespace ARKDiscordBot
 
                     Connected = true;
 
-                    owner._log.Info($"Attempting to Connect - {MapName} on {_ip}:{_port} with password {_rconpassword}");
 
                     _RCON.OnDisconnected += Rcon_OnDisconnected;
                     //this.playerThread = new Thread(async delegate ()
@@ -107,7 +105,6 @@ namespace ARKDiscordBot
                         Thread.Sleep(5000);
                         while (Connected)
                         {
-                            owner._log.Info($"{MapName} - ChatThread::Loop");
                             try
                             {
                                 string r = await _RCON.SendCommandAsync("getchat").ConfigureAwait(false);
@@ -220,7 +217,6 @@ namespace ARKDiscordBot
                             }
                             catch (Exception ex)
                             {
-                                //owner._log.Info(ex.Message);
                                 Connected = false;
                                 _token.Cancel();
                                 break;
@@ -235,7 +231,6 @@ namespace ARKDiscordBot
                 }
                 catch (Exception ex)
                 {
-                    //owner._log.Info(ex.Message);
                     Connected = false;
                     _token.Cancel();
                 }
@@ -262,48 +257,21 @@ namespace ARKDiscordBot
             //}
             //catch (Exception ex)
             //{
-            //    owner._log.Info(ex);
             //}
 
-            owner._log.Info($"Team: {team.Id} {team.Name}");
-            var s = Storage.GetInstance();
-            owner._log.Info($"s:{s}");
-            var players = s.Players;
-            owner._log.Info($"players: {players.Count}");
-            var filtered = players.Where(x => x.TeamId == team.Id);
-            owner._log.Info($"filtered: {filtered.Count()}");
-            foreach (var p in filtered)
-            {
-                owner._log.Info($"{p.SteamID} - {p.TeamId}");
-
-                for (int i = 0; i < 5; i++)
+            Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
+                .ToList().ForEach(async x =>
                 {
                     try
                     {
-                        owner._log.Info($"Before kick command: {p.SteamID}");
-                        var result = _RCON.SendCommandAsync("KickPlayer " + p.SteamID).GetAwaiter().GetResult();
-                        owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {p.SteamID} returned {result}");
+                        string result = await _RCON.SendCommandAsync("KickPlayer " + x);
+                        owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {x} returned {result}");
                     }
                     catch (Exception ex)
                     {
                         owner._log.Info(ex);
                     }
-                }
-            }
-
-            //Storage.GetInstance().Players.Where(x => x.TeamId == team.Id).Select(x => x.SteamID)
-            //    .ToList().ForEach(async x =>
-            //    {
-            //        try
-            //        {
-            //            string result = await _RCON.SendCommandAsync("KickPlayer " + x);
-            //            owner._log.Info($"RCON::{MapName}::KickAllTeamPlayers. {x} returned {result}");
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            owner._log.Info(ex);
-            //        }
-            //    });
+                });
         }
 
         internal void WhiteListTeam(Team team)
