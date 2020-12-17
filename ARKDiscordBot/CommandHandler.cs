@@ -129,7 +129,7 @@ namespace ARKDiscordBot
         {
             ITextChannel channel = await _guild.GetTextChannelAsync(630693266337169440);
 
-            await channel.SendMessageAsync($"<@!519860567070998528> you have {hoursLeft} hours before your deadline.").ConfigureAwait(false);
+            await channel.SendMessageAsync($"<@!519860567070998528> you have {Math.Ceiling(hoursLeft)} hours before your deadline.").ConfigureAwait(false);
         }
 
         internal async Task ClearChannel(ITextChannel c)
